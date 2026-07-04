@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Апгрейд — SkinUp{% endblock %}
+{% block content %}
+<h1 class="page-title">Апгрейд</h1>
+
+<div class="upgrade-layout">
+
+    <!-- Выбор ставки -->
+    <div class="panel">
+        <h2>Ставка</h2>
+
+        <div class="stake-tabs">
+            <button class="tab-btn active" data-tab="balance-tab">Баланс</button>
+            <button class="tab-btn" data-tab="items-tab">Предмет</button>
+        </div>
+
+        <div id="balance-tab" class="tab-content active">
+            <label>Сумма из баланса — доступно {{ current_user.balance }} 💰</label>
+            <input type="number" id="balance-amount" min="1" max="{{ current_user.balance }}" value="100">
+        </div>
+
+        <div id="items-tab" class="tab-content">
+            {% if items %}
+            <div class="mini-skin-grid">
+                {% for item in items %}
+                <div class="mini-skin-card" data-inventory-id="{{ item.id }}" data-price="{{ item.skin.price }}"
+                     style="--rarity-color: {{ item.skin.rarity_info().color }}">
+                    <div class="skin-icon small">
+                        {% if item.skin.image_url %}
+                        <img src="{{ url_for('static', filename=item.skin.image_url) }}" alt="{{ item.skin.name }}">
+                        {% else %}
+                        <img class="fallback-icon" src="{{ url_for('static', filename=item.skin.icon_filename()) }}" alt="{{ item.skin.name }}">
+                        {% endif %}
+                    </div>
+                    <div class="mini-skin-name">{{ item.skin.weapon }} | {{ item.skin.name }}</div>
+                    <div class="mini-skin-price">{{ item.skin.price }} 💰</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-state">Инвентарь пуст. Поставь на баланс — сюда потом попадёт то, что выбьешь.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Множитель и запуск -->
+    <div class="panel">
+        <h2>Множитель</h2>
+
+        <div class="multiplier-buttons">
+            <button class="mult-btn" data-mult="1.5">x1.5</button>
+            <button class="mult-btn active" data-mult="2">x2</button>
+            <button class="mult-btn" data-mult="3">x3</button>
+            <button class="mult-btn" data-mult="5">x5</button>
+            <button class="mult-btn" data-mult="10">x10</button>
+            <button class="mult-btn" data-mult="20">x20</button>
+        </div>
+
+        <div class="chance-info">
+            <span>Шанс успеха</span> <span id="chance-display">48.5%</span>
+        </div>
+        <div class="target-info">
+            <span>Цель</span> <span id="target-display">200 💰</span>
+        </div>
+
+        <button id="upgrade-btn" class="btn-primary btn-big">Крутить</button>
+
+        <p class="fairness-note">
+            Открытая формула: <b>шанс = (1 / множитель) × RTP</b>, RTP = {{ (rtp * 100) | round(0, 'floor') }}%.
+            Никакой скрытой подкрутки под конкретного игрока — сервер считает по этой формуле для всех одинаково.
+        </p>
+    </div>
+</div>
+
+<!-- Прибор риска -->
+<div class="panel strip-panel">
+    <h2>Результат</h2>
+    <div class="dial-wrap">
+        <div id="dial" class="dial">
+            <div class="dial-ticks">
+                {% for i in range(36) %}
+                <div class="dial-tick{{ ' major' if i % 9 == 0 else '' }}" style="transform: rotate({{ i * 10 }}deg);"></div>
+                {% endfor %}
+            </div>
+            <div id="dial-arc" class="dial-arc"></div>
+            <div class="dial-ring"></div>
+            <div id="dial-pointer" class="dial-pointer"></div>
+            <div class="dial-hub"></div>
+            <div class="dial-readout">
+                <span class="rd-chance" id="rd-chance">48.5<span>%</span></span>
+                <span class="rd-status" id="rd-status">Готов к запуску</span>
+            </div>
+        </div>
+    </div>
+    <div id="result-message" class="result-message"></div>
+
+    {% if current_user.is_admin and debug_tools_enabled %}
+    <div class="debug-tools">
+        <p class="empty-state">Дебаг (только локально, не работает если DEBUG_TOOLS_ENABLED выключен на сервере):</p>
+        <button type="button" class="btn-small btn-ok" id="force-win-btn">Форс: Победа</button>
+        <button type="button" class="btn-small btn-danger" id="force-lose-btn">Форс: Проигрыш</button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- История -->
+<div class="panel">
+    <h2>История апгрейдов</h2>
+    {% if history %}
+    <table class="history-table">
+        <thead>
+            <tr><th>Ставка</th><th>Цель</th><th>Шанс</th><th>Результат</th><th>Предмет</th></tr>
+        </thead>
+        <tbody>
+            {% for h in history %}
+            <tr class="{{ 'row-win' if h.win else 'row-lose' }}">
+                <td>{{ h.stake_value }} 💰</td>
+                <td>{{ h.target_value }} 💰</td>
+                <td>{{ (h.chance * 100) | round(1) }}%</td>
+                <td>{{ "Победа" if h.win else "Проигрыш" }}</td>
+                <td>{{ h.result_skin_name or "—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">Апгрейдов пока не было — самое время рискнуть.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upgrade.js') }}"></script>
+{% endblock %}
