@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Инвентарь — SkinUp{% endblock %}
+{% block content %}
+<h1 class="page-title">Инвентарь</h1>
+
+{% if not items %}
+    <p class="empty-state">Пусто здесь. Загляни на <a href="{{ url_for('upgrade_page') }}">Апгрейд</a> и выбей что-нибудь.</p>
+{% else %}
+<div class="skin-grid">
+    {% for item in items %}
+    <div class="skin-card" style="--rarity-color: {{ item.skin.rarity_info().color }}">
+        <div class="skin-icon">
+            {% if item.skin.image_url %}
+            <img src="{{ item.skin.image_url }}" alt="{{ item.skin.name }}"
+                 onerror="this.onerror=null;this.classList.add('fallback-icon');this.src='{{ url_for('static', filename=item.skin.icon_filename()) }}';">
+            {% else %}
+            <img class="fallback-icon" src="{{ url_for('static', filename=item.skin.icon_filename()) }}" alt="{{ item.skin.name }}">
+            {% endif %}
+        </div>
+        <div class="skin-weapon">{{ item.skin.weapon }}</div>
+        <div class="skin-name">{{ item.skin.name }}</div>
+        {% if item.skin.wear %}<div class="skin-wear">{{ item.skin.wear }}</div>{% endif %}
+        <div class="skin-price">{{ item.skin.price }} 💰</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
